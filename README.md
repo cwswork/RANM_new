@@ -4,7 +4,7 @@ Source code and datasets for 2021 paper: [***Semi-supervised Cross-lingual Entit
 
 ## Datasets
 
-> Please first download the datasets and extract them into `datasets/`(https://www.jianguoyun.com/p/DXMWVugQ2t_lCBis-IsE) directory.
+> Please first download the datasets and extract them into `[datasets/](https://www.jianguoyun.com/p/DXMWVugQ2t_lCBis-IsE)` directory.
 
 Initial datasets WN31-15K and DBP-15K are from [OpenEA](https://github:com/nju-websoft/OpenEA) and [JAPE](https://github.com/nju-websoft/JAPE).
 

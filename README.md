@@ -8,6 +8,9 @@ Source code and datasets for 2021 paper: [***Semi-supervised Cross-lingual Entit
 
 Initial datasets WN31-15K and DBP-15K are from [OpenEA](https://github:com/nju-websoft/OpenEA) and [JAPE](https://github.com/nju-websoft/JAPE).
 
+Initial datasets DWY100K is from [BootEA](https://github.com/nju-websoft/BootEA).
+
+
 Take the dataset EN_DE(V1) as an example, the folder "pre4" contains:
 * kg1_ent_dict: ids for entities in source KG;
 * kg2_ent_dict: ids for entities in target KG;

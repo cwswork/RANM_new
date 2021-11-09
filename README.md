@@ -6,8 +6,8 @@ Source code and datasets for 2021 paper: [***Semi-supervised Cross-lingual Entit
 
 > Please first download the datasets [here](https://www.jianguoyun.com/p/DXMWVugQ2t_lCBis-IsE) and extract them into `datasets/` directory.
 
-Initial datasets WN31-15K and DBP-15K are from [OpenEA](https://github:com/nju-websoft/OpenEA) and [JAPE](https://github.com/nju-websoft/JAPE).
-
+Initial datasets WN31-15K is from [OpenEA](https://github:com/nju-websoft/OpenEA).
+Initial datasets DBP-15K is from [JAPE](https://github.com/nju-websoft/JAPE).
 Initial datasets DWY100K is from [BootEA](https://github.com/nju-websoft/BootEA).
 
 

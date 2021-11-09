@@ -1,6 +1,6 @@
 # RANM
 
-Source code and datasets for 2021 paper: [***Semi-supervised Cross-lingual Entity Alignment via Relation-based Adaptive Neighborhood Matching***]
+Source code and datasets for 2021 paper: [***Semi-supervised Entity Alignment via Relation-based Adaptive Neighborhood Matching***]
 
 ## Datasets
 
@@ -43,4 +43,4 @@ python3 exc_plan.py
 
 If you use this model or code, please cite it as follows:
 
-*Weishan Cai, Wenjun Ma, Lina Wei and Yuncheng Jiang. Semi-supervised Cross-lingual Entity Alignment via Relation-based Adaptive Neighborhood Matching. 2021.*
+*Weishan Cai, Wenjun Ma, Lina Wei and Yuncheng Jiang. Semi-supervised Entity Alignment via Relation-based Adaptive Neighborhood Matching. 2021.*

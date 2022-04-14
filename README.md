@@ -4,7 +4,7 @@ Source code and datasets for 2021 paper: [***Semi-supervised Entity Alignment vi
 
 ## Datasets
 
-> Please first download the datasets [here](https://www.jianguoyun.com/p/DXMWVugQ2t_lCBis-IsE) and extract them into `datasets/` directory.
+> Please first download the datasets [here](https://www.jianguoyun.com/p/DY8iIAsQ2t_lCBjK3oUEIAA) and extract them into `datasets/` directory.
 
 Initial datasets WN31-15K is from [OpenEA](https://github:com/nju-websoft/OpenEA).
 Initial datasets DBP-15K is from [JAPE](https://github.com/nju-websoft/JAPE).

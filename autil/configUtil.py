@@ -28,20 +28,23 @@ class configClass():
     def __init__(self, args_file, datasets, division):
         args = Load_args(args_file)
         self.datasetPath = args.datasetPath + datasets+ 'pre4/'
+        #self.division = division
         self.dataset_division = '721_5fold/' + division
         self.output = args.output + datasets + division
         # pre
 
         # embed file
-        self.division_save = self.datasetPath + division  # 'pre4/1/'
-        if not os.path.exists(self.dataset_division):
-            os.makedirs(self.dataset_division)
-        # temp file
-        if not os.path.exists(self.dataset_division + 'temp/'):
-            os.makedirs(self.dataset_division + 'temp/')
+        self.division_save = self.datasetPath + division  #
+        if not os.path.exists(self.division_save):
+            os.makedirs(self.division_save)
+        #
+        if not os.path.exists(self.division_save + 'temp/'):
+            os.makedirs(self.division_save + 'temp/')
 
         self.seed = args.seed
         self.time_str = time.strftime('%Y-%m-%d_%H_%M_%S', time.localtime(time.time()))
+        #
+        self.attn_heads = 1
         self.rel_dim = args.rel_dim
 
         #
@@ -53,40 +56,44 @@ class configClass():
         self.is_cuda = True
         self.isGCN = True  #
         self.isIter = False  #
-
+        self.Name_embed = True
         #
         self.early_stop = args.early_stop
-        self.start_valid = args.start_valid
-        self.eval_freq = args.eval_freq
-        self.eval_save_freq = args.eval_save_freq  # 20
+        self.start_valid = args.start_valid  #
+        self.eval_freq = args.eval_freq   #
+        self.eval_save_freq = args.eval_save_freq  #  20
 
-        # 采样
+        #
         self.top_k = args.top_k
-        self.neg_k = args.neg_k  # 50,100,135,number of negative samples for each positive one
+        self.neg_k = args.neg_k
 
-        # 超参
+        #
         self.learning_rate = args.learning_rate
         self.weight_decay = args.weight_decay
         self.LeakyReLU_alpha = args.LeakyReLU_alpha
+        self.dropout = args.dropout
         self.gamma_rel = args.gamma_rel
         self.beta1 = args.beta1
 
-
-    # 结果保存文件名
+    #
     def get_param(self):
         self.model_param = 'epochs_' + str(self.train_epochs) + \
              '-negk_' + str(self.neg_k) + \
              '-dis_' + str(self.metric) + \
              '-lr_' + str(self.learning_rate) + \
              '-reldim_' + str(self.rel_dim) + \
-             '-be1_' + str(self.beta1)
+             '-be1_' + str(self.beta1) + \
+           '-attn_' + str(self.attn_heads) + \
+           '-drop_' + str(self.dropout)
 
         self.model_param += '-garel_' + str(self.gamma_rel)
+
+        #
         self.model_param += '-isIter_' + str(self.isIter)
+        #
         self.model_param += '-isGCN_' + str(self.isGCN)
 
         return self.model_param
-
 
     def set_myprint(self, runfile, issave=True):
         random.seed(self.seed)
@@ -110,8 +117,9 @@ class configClass():
 
 
 def Load_args(file_path):
-    ''' args/** .json '''
-    args_dict = loadmyJson(file_path)
+    '''  args/** .json '''
+    args_dict = loadmyJson(file_path)  #
+    # print("load arguments:", args_dict)
     args = ARGs(args_dict)
     return args
 
@@ -166,6 +174,7 @@ def cleanNote(line_str):
     return line_str
 
 
+#
 def isEscapeOpr(instr):
     if len(instr) <= 0:
         return False

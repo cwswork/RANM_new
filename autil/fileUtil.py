@@ -7,13 +7,13 @@ def savepickle(path, data):
     pickle.dump(data, f)
     f.close()
 
+
 def loadpickle(path):
     with open(path, "rb+") as f:
         data = pickle.load(f)
     return data
 
 #########################################################
-## save
 def save_dict2txt(outfile, out_dict, save_kv='kv'):
     with open(outfile, 'w', encoding='utf-8') as fw:
         if save_kv == 'vk':
@@ -56,7 +56,6 @@ def save_triple2txt(outfile, triples_list):
 
 
 #########################################################
-#### Load ###
 def get_links_ids(links_file, kg1_ent2id_dict, kg2_ent2id_dict):
     ent_links = load_list(links_file)
 
@@ -71,6 +70,7 @@ def get_links_ids(links_file, kg1_ent2id_dict, kg2_ent2id_dict):
     return links_ids_list
 
 def get_links_ids2(links_file):
+
     print("load_list:", links_file)
     links_ids_list = []
     with open(links_file, encoding='utf-8', mode='r') as f:
@@ -93,6 +93,11 @@ def load_list(file_path):
 
 
 def load_dict(file_path, read_kv='kv', sep='\t'):
+    '''
+    :param file_path:
+    :param read_kv: ='kv' or 'vk'
+    :return:
+    '''
     print("load dict:", file_path)
     value_trans_dict = {}
     with open(file_path, encoding='utf-8', mode='r') as f:
@@ -112,6 +117,10 @@ def load_dict(file_path, read_kv='kv', sep='\t'):
 
 
 def load_ids2list(file_path):
+    '''
+    :param file_path:
+    :return:
+    '''
     print("load ids to list file:", file_path)
     new_list = []
     with open(file_path, encoding='utf-8', mode='r') as f:
@@ -159,7 +168,8 @@ def load_triples_id(file_path):
     return new_list
 
 
-## Load triple ###########################################
+# Read file
+## Triple ###########################################
 def read_relation_triples(file_path):
     '''
     read relation_triples
@@ -186,6 +196,44 @@ def read_relation_triples(file_path):
     print("Number of relations:", len(relations))
     print("Number of relation triples:", len(triples))
     return triples, entities, relations
+
+
+def read_attribute_triples(file_path):
+    '''
+    read relation_triples
+    :param file_path: attr_triples_1
+    :return: triples, entities, relations
+    '''
+    print("\nread attribute triples:", file_path)
+    if file_path is None:
+        return set(), set(), set()
+    triples = set()
+    entities, attributes, values = set(), set(), set()
+    file = open(file_path, 'r', encoding='utf8')
+    for line in file.readlines():
+        params = line.strip().strip('\n').split('\t')
+        if len(params) <= 2:
+            print(params)
+        if len(params) > 2:
+            head = params[0].strip()
+            attr = params[1].strip()
+            value = params[2].strip()
+            if len(params) > 3:
+                for p in params[3:]:
+                    value = value + ' ' + p.strip()
+            value = value.strip().rstrip('.').strip()
+            if len(value) > 0:
+                entities.add(head)
+                attributes.add(attr)
+                values.add(value)
+                triples.add((head, attr, value))
+            # else:
+            #     print(value)
+    print("Number of entities:", len(entities))
+    print("Number of attributes:", len(attributes))
+    print("Number of values:", len(values))
+    print("Number of attributes triples:", len(triples))
+    return triples, attributes, values  # , entities
 
 
 def sort_elements(triples, elements_set):

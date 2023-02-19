@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -17,7 +19,7 @@ class align_gcn(nn.Module):
         self.sigmoid = nn.Sigmoid()
 
         self.kg_E = kg_E
-        self.e_dim = config.rel_dim # dimension
+        self.e_dim = config.rel_dim * config.attn_heads # dimension
 
         # GCN+highway
         self.gcnW1 = nn.Parameter(torch.zeros(size=(self.e_dim, self.e_dim)))
@@ -34,7 +36,7 @@ class align_gcn(nn.Module):
 
 
     def set_ent_adj(self, ent_neigh_dict, ent_newid_array, batch_size):
-        ''' Get neighbor relationships between entities '''
+        ''' Get neighbor relationships between entities'''
         new_ent_list = alignment.divide_array(ent_newid_array, batch_size)
         self.batch_num = 0
         self.kg_adj_list = []
@@ -44,7 +46,6 @@ class align_gcn(nn.Module):
             self.ent_oldids_list.append(oldid_list)
             self.batch_num += 1
 
-            # 邻居矩阵
             adj_row = []
             adj_col = []
             adj_data = []
@@ -52,12 +53,14 @@ class align_gcn(nn.Module):
             for h in batch_newid_array[:, 0]: # newid
                 tr_list = ent_neigh_dict[h]
                 t_list = [t for (t, r) in tr_list if h!=t ]
+                #du = math.sqrt(len(t_list) + 1)
                 du = len(t_list) + 1
                 for t in t_list:
                     adj_row.append(row_id)  # h id => Line number
                     adj_col.append(t)
                     adj_data.append(1 / du)
                     assert t <= self.kg_E
+
                 row_id += 1
 
             assert row_id == batch_newid_array.shape[0]
@@ -65,7 +68,7 @@ class align_gcn(nn.Module):
             adj_index = np.vstack((adj_row, adj_col))  # (2,D)
             self.kg_adj_list.append([adj_index, adj_data]) # eer_adj
 
-        self.myprint('Divide the number of batches (GCN)：' + str(self.batch_num))
+        self.myprint('划分batch数量(GCN)：' + str(self.batch_num))
 
 
     def forward(self, right_embed):
@@ -74,8 +77,6 @@ class align_gcn(nn.Module):
         left_embed = right_embed[self.ent_newid_tensor, :]
         # highway
         gcn_e_2 = self.highway(left_embed, gcn_e_1)
-        # gcn_e_3 = self.add_diag_layer(gcn_e_2)
-        # output_layer = self.highway(gcn_e_2, gcn_e_3)  # (E_new,dim)
         return gcn_e_2  # (E_new,E)
 
 
@@ -106,7 +107,7 @@ class align_gcn(nn.Module):
     def add_diag_layer_batch(self, e_inlayer, batch_adj_index, batch_adj_data, batch_size):
         #e_inlayer = self.dropout(e_inlayer)
         e_inlayer = torch.mm(e_inlayer, self.gcnW1)  # (E,dim)*(dim,dim) =>(E,dim)
-        # e_adj  (batch_size,E)* (E,dim) =>(batch_size,dim)
+        # e_adj (batch_size,E)* (E,dim) =>(batch_size,dim)
         e_out = self.special_spmm(batch_adj_index, batch_adj_data, torch.Size([batch_size, self.kg_E]), e_inlayer)
         return self.relu(e_out)
 

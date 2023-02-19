@@ -1,3 +1,4 @@
+import gc
 import numpy as np
 import torch
 import torch.nn as nn
@@ -23,17 +24,17 @@ class align_union(nn.Module):
         self.kg_R = kgs_data.kg_R
         #self.kg_E_new = kgs_data.kg_E
 
-        # Entity name embedding ##############
+        # name embedding ##############
         self.e_dim = config.rel_dim
         self.r_dim = self.e_dim * 2
         self.kg_name_embed = kgs_data.ename_embed
+
         self.kg_name_w = nn.Parameter(torch.zeros(size=(300, self.e_dim)))
         self.kg_name_b = nn.Parameter(torch.zeros(size=(self.e_dim, 1)))
-
         # Set Relation neighbor parameters
         self.set_R_adj(kgs_data.rel_triple)
 
-        # GCN Layer
+        # GCN
         self.gcn_model = align_gcn(kgs_data.kg_E, config)
         if self.config.is_cuda:
             self.kg_name_embed = self.kg_name_embed.cuda()
@@ -43,18 +44,18 @@ class align_union(nn.Module):
         # Relational embedding
         self.w_R_Left = nn.Parameter(torch.zeros(size=(self.e_dim, self.e_dim))) # W_r
         self.w_R_Right = nn.Parameter(torch.zeros(size=(self.e_dim, self.e_dim)))
-        self.w_atten_r = nn.Parameter(torch.zeros(size=(self.r_dim, 1)))  # R attention参数
+        self.w_atten_r = nn.Parameter(torch.zeros(size=(self.r_dim, 1)))
 
         ## Parameter initialization ##############
         for m in self.parameters():
             if isinstance(m, nn.Parameter):
-                nn.init.xavier_normal_(m.data, gain=1.414)  # Xavier正态分布
-        ## Parameter list
+                nn.init.xavier_normal_(m.data, gain=1.414)
+        ##  Parameter list
         params = list(self.parameters()) + list(self.gcn_model.parameters())
         self.model_params = [{'params': params}]
 
         # Set training set, test set, candidate set and negative sample
-        self.links_old_init(kgs_data)
+        self.links_old_init(kgs_data)  #links_init
         self.beg_gcn = self.is_regen = False
 
 
@@ -89,7 +90,7 @@ class align_union(nn.Module):
 
         eer_adj_index = np.vstack((r_mat_row, r_mat_col))  # (2,D)
         self.eer_adj_index = torch.LongTensor(eer_adj_index)
-        self.eer_adj_data = torch.LongTensor(r_mat_data)  # Float
+        self.eer_adj_data = torch.LongTensor(r_mat_data)
 
         if self.config.is_cuda:
             self.tensor_zero = self.tensor_zero.cuda()
@@ -111,8 +112,8 @@ class align_union(nn.Module):
         # 2 gat model
         r_embed_1 = self.add_r_layer(name_embed)  # (R,r_dim)
         e_embed_1 = self.add_e_att_layer(name_embed, r_embed_1)
-        gat_embed_1 = name_embed + self.config.beta1 * e_embed_1
-        # two layer
+        gat_embed_1 = name_embed + self.config.beta1 * e_embed_1  # ？？
+        #
         r_embed_2 = self.add_r_layer(gat_embed_1)
         e_embed_2 = self.add_e_att_layer(gat_embed_1, r_embed_2)
         gat_embed = name_embed + self.config.beta1 * e_embed_2
@@ -132,10 +133,9 @@ class align_union(nn.Module):
         e_ij_embed = torch.cat((e_i_layer, e_j_layer), dim=1)
 
         # [ei||ej]*rij        # (D,r_dim)  D = 176396
-        r_qtr = r_layer[self.eer_adj_data]
+        r_qtr = r_layer[self.eer_adj_data]  #
         eer_embed = e_ij_embed * r_qtr  # (D,r_dim)
 
-        # ee_atten = leakyrelu(a*eer_embed)eer_embed:
         ee_atten = torch.exp(
             -self.leakyrelu(torch.matmul(eer_embed, self.w_atten_r).squeeze()))  # (D,r_dim)*(r_dim,1) => D
 
@@ -155,6 +155,7 @@ class align_union(nn.Module):
     # add relation layer
     def add_r_layer(self, e_inlayer):
         L_e_inlayer = torch.mm(e_inlayer, self.w_R_Left)
+
         L_r_embed = torch.matmul(self.r_head, L_e_inlayer)  # (R,E)*(E,d) => (R,d)
         L_r_embed = L_r_embed * self.r_head_sum  # / r_head_sum => Multiply by the reciprocal instead
 
@@ -168,7 +169,6 @@ class align_union(nn.Module):
 
     ## Loss function, negative sampling ################
     def get_loss(self, kg_embed, isTrain=True):
-        # negative sampling
         if isTrain:
             tt_neg = self.train_neg_pairs  # (pe1, pe2, neg_indexs1[i], neg_indexs2[i])
         else:
@@ -178,12 +178,12 @@ class align_union(nn.Module):
         pe1_embed = kg_embed[tt_neg[:, 0]]
         pe2_embed = kg_embed[tt_neg[:, 1]]
         A = alignment.mypair_distance_min(pe1_embed, pe2_embed, distance_type=self.config.metric)
-        D = (A + self.config.gamma_rel)
+        D = (A + self.config.gamma_rel) # .view(t, 1)
 
         # Negative sample 1, p1 negative sample
         ne1_embed = kg_embed[tt_neg[:, 2]]
         B = alignment.mypair_distance_min(pe1_embed, ne1_embed, distance_type=self.config.metric)
-        loss1 = self.relu(D - B)
+        loss1 = self.relu(D - B) # (t, 50).view(t, -1)
 
         # Negative sample 2, p2 negative sample
         ne2_embed = kg_embed[tt_neg[:, 3]]
@@ -208,7 +208,7 @@ class align_union(nn.Module):
             Right_vec = kg_embed[tt_links_tensor[:, 1], :]
             # From left
             all_hits, mr, mrr, hits1_list, noHits1_list, notin_candi = self.get_hits(Left_vec, Right_vec, tt_links_new)
-            # Similarity calculation measure:
+            # L1/L2
             result_str1 = "==accurate results: hits@{} = {}%, mr = {:.3f}, mrr = {:.6f}, noHits1:{}".format(
                 self.config.top_k, all_hits, mr, mrr, len(noHits1_list))
 
@@ -224,9 +224,10 @@ class align_union(nn.Module):
 
         return (all_hits, mr, mrr), result_str1, hits1_list, noHits1_list
 
-    # Accuracy, hits and other results
+
     def get_hits(self, Left_vec, Right_vec, tt_links_new):
-        max_index = alignment.torch_sim_max_topk(Left_vec, Right_vec, top_num=self.config.top_k[-1], metric=self.config.metric)
+
+        min_index = alignment.torch_sim_min_topk(Left_vec, Right_vec, top_num=self.config.top_k[-1], metric=self.config.metric)
 
         # left
         mr = 0
@@ -236,9 +237,9 @@ class align_union(nn.Module):
         all_hits = [0] * len(self.config.top_k)
         hits1_list = list()
         noHits1_list = list()
-        for row_i in range(max_index.shape[0]):
-            e2_ranks_index = max_index[row_i, :]
-            if self.beg_gcn == False:  # Only the old id
+        for row_i in range(min_index.shape[0]):
+            e2_ranks_index = min_index[row_i, :]
+            if self.beg_gcn == False:  #
                 e1_old_gold, e2_old_gold = tt_links_new[row_i]
                 e2_rank_oldids = tt_links_new[e2_ranks_index, 1].tolist()
             else:
@@ -249,7 +250,7 @@ class align_union(nn.Module):
                 e2_rank_oldids = [self.newentid_dict[new_id] for new_id in e2_rank_newids]
                 e2_rank_oldids = model_util.link_inset(e2_rank_oldids)
 
-            hits1_list.append((e1_old_gold, e2_rank_oldids[0]))
+            hits1_list.append((e1_old_gold, e2_rank_oldids[0]))  # rank[0] top 1
             if e2_old_gold != e2_rank_oldids[0]:
                 noHits1_list.append((e1_old_gold, e2_old_gold, e2_rank_oldids[0]))
             if e2_old_gold not in e2_rank_oldids:
@@ -264,14 +265,13 @@ class align_union(nn.Module):
 
         assert len(hits1_list) == tt_num
         all_hits = [round(hh / tt_num * 100, 4) for hh in all_hits]
-        mr /= tt_num
-        mrr /= tt_num
+        mr /= tt_num   #
+        mrr /= tt_num  #
 
         return all_hits, mr, mrr, hits1_list, noHits1_list, notin_candi
 
 
     def links_old_init(self, kgs_data):
-        # new neg link and links
         self.train_links_new = []
         self.test_links_new = []
         self.valid_links_new = []
@@ -294,6 +294,7 @@ class align_union(nn.Module):
     def links_new_init(self, kgs_data, newentid_dict, ent_new_pair):
         self.newentid_dict = newentid_dict
 
+        # new neg link and links
         self.train_links_new = \
             model_util.links_init_partiton(kgs_data.train_links, ent_new_pair)
         self.valid_links_new =\
@@ -311,14 +312,14 @@ class align_union(nn.Module):
         self.myprint('++++++++begin GCN model+++++++++')
         self.beg_gcn = self.is_regen = True
 
+        #if os.path.exists(kgsdata_file):
         kgs_data = fileUtil.loadpickle(self.config.division_save + 'kgsdata.pkl')
         # Generate the new ent id set
         newentid_dict, ent_neigh_dict, ent_new_pair, ent_old2list_dict = kgs_data.pre_gen(ent_embed, self.config)
         fileUtil.savepickle(self.config.division_save + 'kgsdata2.pkl', kgs_data)
 
-        # Reset training set
-        self.links_new_init(kgs_data, newentid_dict, ent_new_pair)
-        # Reset neighborhood
+
+        self.links_new_init(kgs_data, newentid_dict, ent_new_pair)  # , ent_old2list_dict
         self.gcn_model.data_init(newentid_dict, ent_neigh_dict)
 
 
@@ -330,9 +331,7 @@ class align_union(nn.Module):
         newentid_dict, ent_neigh_dict, ent_new_pair, ent_old2list_dict = kgs_data.newentid_dict, \
                               kgs_data.ent_neigh_dict, kgs_data.ent_new_pair, kgs_data.ent_old2list_dict
 
-        # Reset training set
         self.links_new_init(kgs_data, newentid_dict, ent_new_pair)  # , ent_old2list_dict
-        # Reset neighborhood
         self.gcn_model.data_init(newentid_dict, ent_neigh_dict)
 
 
@@ -340,8 +339,9 @@ class align_union(nn.Module):
         if self.is_regen or epochs_i % 20 == 0:
             self.train_neg_pairs = model_util.gen_neg(ent_embed, self.train_links_new,
                                                       self.config.metric, self.config.neg_k)
-            self.valid_neg_pairs = model_util.gen_neg(ent_embed, self.valid_links_new,
-                                                      self.config.metric, self.config.neg_k)
+            if len(self.valid_links_new) != 0:
+                self.valid_neg_pairs = model_util.gen_neg(ent_embed, self.valid_links_new,
+                                                          self.config.metric, self.config.neg_k)
             if self.is_regen:
                 self.is_regen = False
 
@@ -373,20 +373,23 @@ class align_union(nn.Module):
         ent_embed_left = ent_embed[left_tensor]
         ent_embed_right = ent_embed[right_tensor]
 
-        index_mat_left, score_mat_left = alignment.torch_sim_max_topk_s(ent_embed_left, ent_embed_right, top_num=1, metric='cosine')
-        index_mat_left, score_mat_left = index_mat_left.squeeze(-1), score_mat_left.squeeze(-1)
+        right_size = len(self.left_non_train)
+        score_mat_left, index_mat_left = alignment.torch_sim_min_topk_s(ent_embed_left, ent_embed_right, top_num=1,
+                                                                        metric='cosine', right_size=right_size)
+        score_mat_left, index_mat_left = score_mat_left.squeeze(-1), index_mat_left.squeeze(-1) # .squeeze(-1)
 
-        index_mat_right, score_mat_right = alignment.torch_sim_max_topk_s(ent_embed_right, ent_embed_left, top_num=1, metric='cosine')
-        index_mat_right, score_mat_right = index_mat_right.squeeze(-1), score_mat_right.squeeze(-1)
+        score_mat_right, index_mat_right = alignment.torch_sim_min_topk_s(ent_embed_right, ent_embed_left, top_num=1,
+                                                                          metric='cosine', right_size=right_size)
+        score_mat_right, index_mat_right = score_mat_right.squeeze(-1), index_mat_right.squeeze(-1)  # .squeeze(-1)
 
         ILL_list = []
+        self.sim_threshold_min = 0.95
         for i, p in enumerate(index_mat_left):
-            # Two-way alignment
-            if score_mat_left[i]<0.95 or score_mat_right[p]<0.95:
+            if 1-score_mat_left[i] < self.sim_threshold_min or 1-score_mat_right[p] < self.sim_threshold_min:
                 continue
             elif index_mat_right[p] == i:
                 ee_pair = (self.left_non_train[i], self.right_non_train[p])
-                if new_links == [] or (ee_pair in new_links): # Intersection
+                if new_links == [] or (ee_pair in new_links): # 交集
                     ILL_list.append(ee_pair)
 
         if len(ILL_list) > 0:

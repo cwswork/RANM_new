@@ -42,5 +42,5 @@ python3 align_exc.py
 
 If you use this model or code, please cite it as follows:
 
-Weishan Cai, Wenjun Ma, Lina Wei, and Yuncheng Jiang*. Semi-supervised Entity Alignment via Relation-based Adaptive Neighborhood Matching, IEEE Transactions on Knowledge and Data Engineering(TKDE), Early Access Article. DOI: 10.1109/TKDE.2022.3222811, 2022. (CCF A类期刊)
+Weishan Cai, Wenjun Ma, Lina Wei, and Yuncheng Jiang*. Semi-supervised Entity Alignment via Relation-based Adaptive Neighborhood Matching, IEEE Transactions on Knowledge and Data Engineering(TKDE), Early Access Article. DOI: 10.1109/TKDE.2022.3222811, 2022. (CCF A)
 

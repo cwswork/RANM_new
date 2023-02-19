@@ -1,6 +1,6 @@
 # RANM
 
-Source code and datasets for 2021 paper: [***Semi-supervised Entity Alignment via Relation-based Adaptive Neighborhood Matching***]
+Source code and datasets for TKDE2022 paper: [***Semi-supervised Entity Alignment via Relation-based Adaptive Neighborhood Matching***]
 
 ## Datasets
 
@@ -9,7 +9,6 @@ Source code and datasets for 2021 paper: [***Semi-supervised Entity Alignment vi
 Initial datasets WN31-15K is from [OpenEA](https://github:com/nju-websoft/OpenEA).
 Initial datasets DBP-15K is from [JAPE](https://github.com/nju-websoft/JAPE).
 Initial datasets DWY100K is from [BootEA](https://github.com/nju-websoft/BootEA).
-
 
 Take the dataset EN_DE(V1) as an example, the folder "pre4" contains:
 * kg1_ent_dict: ids for entities in source KG;
@@ -32,7 +31,7 @@ Take the dataset EN_DE(V1) as an example, the folder "pre4" contains:
 
 To run RANM model on WN31-15K and DBP-15K, use the following script:
 ```
-python3 exc_plan.py
+python3 align_exc.py
 ```
 
 > Due to the instability of embedding-based methods, it is acceptable that the results fluctuate a little bit (±1%) when running code repeatedly.
@@ -43,4 +42,5 @@ python3 exc_plan.py
 
 If you use this model or code, please cite it as follows:
 
-*Weishan Cai, Wenjun Ma, Lina Wei and Yuncheng Jiang. Semi-supervised Entity Alignment via Relation-based Adaptive Neighborhood Matching. 2021.*
+Weishan Cai, Wenjun Ma, Lina Wei, and Yuncheng Jiang*. Semi-supervised Entity Alignment via Relation-based Adaptive Neighborhood Matching, IEEE Transactions on Knowledge and Data Engineering(TKDE), Early Access Article. DOI: 10.1109/TKDE.2022.3222811, 2022. (CCF A类期刊)
+
